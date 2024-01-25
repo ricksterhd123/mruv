@@ -1,2 +1,2 @@
-#define mruv_VERSION_MAJOR @Tutorial_VERSION_MAJOR@
-#define mruv_VERSION_MINOR @Tutorial_VERSION_MINOR@
+#define mruv_VERSION_MAJOR @mruv_VERSION_MAJOR@
+#define mruv_VERSION_MINOR @mruv_VERSION_MINOR@
