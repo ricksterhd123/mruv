@@ -1,14 +1,26 @@
 FROM ubuntu:22.04
+SHELL ["/bin/bash", "-l", "-c"]
 
 ARG MRUBY_VERSION=3.2.0
 ARG LIBUV_VERSION=1.47.0
+ARG RUBY_VERSION=3.2.3
 
 RUN apt update && apt install -y build-essential
 RUN apt update && apt install -y git
 RUN apt update && apt install -y cmake
 RUN apt update && apt install -y wget
 RUN apt update && apt install -y curl
-RUN apt update && apt install -y ruby
+RUN apt update && apt install -y gnupg2
+
+# grab rvm && install ruby
+RUN gpg2 --keyserver keyserver.ubuntu.com --recv-keys 409B6B1796C275462A1703113804BB82D39DC0E3 7D2BAF1CF37B13E2069D6956105BD0E739499BDB
+RUN curl -sSL https://get.rvm.io | bash -s stable
+RUN rvm install ${RUBY_VERSION}
+RUN rvm --default use ${RUBY_VERSION}
+
+# install ruby gems for development environment
+RUN gem install ruby-lsp
+RUN gem install solargraph
 
 # grab mruby
 RUN wget https://github.com/mruby/mruby/archive/refs/tags/${MRUBY_VERSION}.tar.gz -P /tmp/mruby

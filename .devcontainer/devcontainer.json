@@ -15,7 +15,9 @@
 				"VisualStudioExptTeam.vscodeintellicode",
 				"ms-azuretools.vscode-docker",
 				"EditorConfig.EditorConfig",
-				"twxs.cmake"
+				"twxs.cmake",
+				"Shopify.ruby-extensions-pack",
+				"castwide.solargraph"
 			]
 		}
 	}
