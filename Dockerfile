@@ -1,4 +1,6 @@
-FROM ubuntu:22.04
+FROM ubuntu:20.04
+
+ENV DEBIAN_FRONTEND=noninteractive
 SHELL ["/bin/bash", "-l", "-c"]
 
 ARG MRUBY_VERSION=3.2.0
@@ -41,3 +43,7 @@ WORKDIR /libuv-${LIBUV_VERSION}
 RUN cmake . -DBUILD_TESTING=ON
 RUN cmake --build .
 RUN cmake --install .
+
+# setup as a devcontainer and buildtool
+WORKDIR /
+ENTRYPOINT ["/bin/bash", "-l", "-c"]
