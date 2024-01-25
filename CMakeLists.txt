@@ -5,6 +5,7 @@ project(mruv VERSION 1.0)
 configure_file(mruv_config.h.in mruv_config.h)
 
 add_executable(mruv main.c)
+configure_file(config.rb config.rb COPYONLY)
 
 add_library(mruby STATIC IMPORTED)
 set_target_properties(mruby PROPERTIES IMPORTED_LOCATION /usr/local/lib/libmruby.a)
