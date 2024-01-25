@@ -2,8 +2,6 @@ cmake_minimum_required(VERSION 3.10)
 
 project(mruv VERSION 1.0)
 
-configure_file(src/includes/mruv_config.h.in src/includes/mruv_config.h)
-
 add_executable(mruv src/main.c)
 configure_file(config.rb config.rb COPYONLY)
 
