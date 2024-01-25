@@ -1,2 +1,0 @@
-#define mruv_VERSION_MAJOR @mruv_VERSION_MAJOR@
-#define mruv_VERSION_MINOR @mruv_VERSION_MINOR@
