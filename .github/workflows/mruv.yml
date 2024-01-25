@@ -20,6 +20,6 @@ jobs:
         cache-to: type=gha,mode=max
         load: true
     - name: Build mruv
-      run: bash build.sh
+      run: docker container run -v ".:/mruv" mruv:$VERSION 'cd mruv && mkdir -p build && cd build && cmake .. && cmake --build .'
     - name: Run mruv
       run: cd build && ./mruv

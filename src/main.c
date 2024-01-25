@@ -142,27 +142,25 @@ int main()
     // mrb_define_method(mrb, mrb->kernel_module, "add_event_handler", add_event_handler, MRB_ARGS_NONE() | MRB_ARGS_BLOCK());
 
     config_script = mrb_load_file(mrb, fp);
-    loop = uv_default_loop();
 
-    // mrb_int i = 99;
-    // mrb_funcall(mrb, config_script, "method_name", 1, mrb_fixnum_value(i));
+    // loop = uv_default_loop();
+    // uv_tcp_t server;
 
-    uv_tcp_t server;
-    uv_tcp_init(loop, &server);
+    // uv_tcp_init(loop, &server);
+    // uv_ip4_addr("0.0.0.0", DEFAULT_PORT, &addr);
+    // uv_tcp_bind(&server, (const struct sockaddr *)&addr, 0);
 
-    uv_ip4_addr("0.0.0.0", DEFAULT_PORT, &addr);
+    // int r = uv_listen((uv_stream_t *)&server, DEFAULT_BACKLOG, on_new_connection);
+    // if (r)
+    // {
+    //     fprintf(stderr, "Listen error %s\n", uv_strerror(r));
+    //     return 1;
+    // }
 
-    uv_tcp_bind(&server, (const struct sockaddr *)&addr, 0);
-    int r = uv_listen((uv_stream_t *)&server, DEFAULT_BACKLOG, on_new_connection);
-    if (r)
-    {
-        fprintf(stderr, "Listen error %s\n", uv_strerror(r));
-        return 1;
-    }
+    // int result = uv_run(loop, UV_RUN_DEFAULT);
 
-    int result = uv_run(loop, UV_RUN_DEFAULT);
     mrb_close(mrb);
     fclose(fp);
 
-    return result;
+    return 0;
 }
