@@ -1,0 +1,25 @@
+name: mruv CI
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: docker/setup-buildx-action@v3
+    - uses: docker/build-push-action@v5
+      with:
+        context: .
+        tags: mruv:latest
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        load: true
+    - name: Build mruv
+      run: bash build.sh
+    - name: Run mruv
+      run: cd build && ./mruv

@@ -13,5 +13,6 @@ add_library(libuv STATIC IMPORTED)
 set_target_properties(libuv PROPERTIES IMPORTED_LOCATION /usr/local/lib/libuv.a)
 set_target_properties(libuv PROPERTIES INTERFACE_INCLUDE_DIRECTORIES /usr/local/include)
 
-target_link_libraries(mruv PRIVATE libuv mruby m)
+target_compile_options(mruv PUBLIC "-pthread")
+target_link_libraries(mruv PRIVATE libuv mruby m dl pthread)
 target_include_directories(mruv PRIVATE "${PROJECT_BINARY_DIR}")
