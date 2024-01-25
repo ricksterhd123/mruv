@@ -90,7 +90,7 @@ mrb_value add_event_handler(mrb_state *mrb, mrb_value self)
     const char* event_name;
     mrb_value event_handler_block;
 
-    mrb_int n_args = mrb_get_args(mrb, "&!", &event_handler_block);
+    mrb_int n_args = mrb_get_args(mrb, "&", &event_handler_block);
 
     printf("%ld\n", n_args);
 
@@ -115,7 +115,7 @@ int main()
         return 1;
     }
 
-    mrb_define_method(mrb, mrb->kernel_module, "add_event_handler", add_event_handler, MRB_ARGS_REQ(2));
+    mrb_define_method(mrb, mrb->kernel_module, "add_event_handler", add_event_handler, MRB_ARGS_NONE()|MRB_ARGS_BLOCK());
 
     config_script = mrb_load_file(mrb, fp);
     loop = uv_default_loop();

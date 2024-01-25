@@ -2,9 +2,9 @@ cmake_minimum_required(VERSION 3.10)
 
 project(mruv VERSION 1.0)
 
-configure_file(mruv_config.h.in mruv_config.h)
+configure_file(src/includes/mruv_config.h.in src/includes/mruv_config.h)
 
-add_executable(mruv main.c)
+add_executable(mruv src/main.c)
 configure_file(config.rb config.rb COPYONLY)
 
 add_library(mruby STATIC IMPORTED)
