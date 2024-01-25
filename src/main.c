@@ -1,10 +1,12 @@
-#include "mruv_config.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <uv.h>
 #include <mruby.h>
 #include <mruby/compile.h>
+#include <mruby/proc.h>
+#include <mruby/variable.h>
+#include <mruby/hash.h>
 
 #define DEFAULT_PORT 7000
 #define DEFAULT_BACKLOG 128
@@ -12,6 +14,11 @@
 uv_loop_t *loop;
 struct sockaddr_in addr;
 mrb_state *mrb;
+
+// environment
+mrb_value mruv;
+
+// user script
 mrb_value config_script;
 mrb_value handler;
 
@@ -85,17 +92,29 @@ void on_new_connection(uv_stream_t *server, int status)
     }
 }
 
-mrb_value add_event_handler(mrb_state *mrb, mrb_value self)
-{
-    const char* event_name;
-    mrb_value event_handler_block;
+// mrb_value add_event_handler(mrb_state *mrb, mrb_value self)
+// {
+//     const char *event_name;
+//     mrb_value blk;
 
-    mrb_int n_args = mrb_get_args(mrb, "&", &event_handler_block);
+//     mrb_get_args(mrb, "&", &blk);
+//     if (mrb_nil_p(blk))
+//     {
+//         mrb_raise(mrb, E_ARGUMENT_ERROR, "tried to add event handler without a block");
+//     }
 
-    printf("%ld\n", n_args);
+//     struct RProc *p = mrb_proc_ptr(blk);
+//     if (!MRB_PROC_STRICT_P(p))
+//     {
+//         struct RProc *p2 = MRB_OBJ_ALLOC(mrb, MRB_TT_PROC, p->c);
+//         mrb_proc_copy(mrb, p2, p);
+//         p2->flags |= MRB_PROC_STRICT;
+//         return mrb_obj_value(p2);
+//     }
 
-    return mrb_str_new_lit(mrb, "hello");
-}
+//     MRB_METHOD_FROM_PROC(mbr, p);
+//     return mrb_vm_run(mrb, p, self, 0);
+// }
 
 int main()
 {
@@ -115,7 +134,12 @@ int main()
         return 1;
     }
 
-    mrb_define_method(mrb, mrb->kernel_module, "add_event_handler", add_event_handler, MRB_ARGS_NONE()|MRB_ARGS_BLOCK());
+    mruv = mrb_hash_new(mrb);
+
+    mrb_hash_set(mrb, mruv, mrb_str_new_lit(mrb, "VERSION"), mrb_str_new_lit(mrb, "v1.0.0"));
+    mrb_gv_set(mrb, mrb_intern_lit(mrb, "$mruv"), mruv);
+
+    // mrb_define_method(mrb, mrb->kernel_module, "add_event_handler", add_event_handler, MRB_ARGS_NONE() | MRB_ARGS_BLOCK());
 
     config_script = mrb_load_file(mrb, fp);
     loop = uv_default_loop();
