@@ -158,15 +158,17 @@ int main()
         fprintf(stderr, "`handler` method does not exist\n");
         error = 1;
         goto CLEANUP;
+    } else {
+        printf("Found method `handler`\n");
     }
 
-    struct RProc* handler_proc = MRB_METHOD_PROC(handler);
+    // struct RProc* handler_proc = MRB_METHOD_PROC(handler);
 
-    
-    mrb_value handler_result = mrb_vm_run(mrb, handler_proc, );
-    mrb_value handler_result_string = mrb_obj_as_string(mrb, handler_result);
 
-    printf("result: %s\n", mrb_string_value_cstr (mrb, &handler_result_string));
+    // mrb_value handler_result = mrb_vm_run(mrb, handler_proc, );
+    // mrb_value handler_result_string = mrb_obj_as_string(mrb, handler_result);
+
+    // printf("result: %s\n", mrb_string_value_cstr (mrb, &handler_result_string));
 
     // loop = uv_default_loop();
     // uv_tcp_t server;
