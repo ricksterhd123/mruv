@@ -1,21 +1,22 @@
-puts $mruv
+# frozen_string_literal: true
 
 ##
 # mruv socket handler function fizzbuzz example
 #
-def handler(env)
-  n = env.chomp.to_i
-  if n > 0 and n < 100 then
-    if n % 15 == 0 then
-      "fizzbuzz"
-    elsif n % 3 == 0 then
-      "fizz"
-    elsif n % 5 == 0 then
-      "buzz"
+def handler(event, context)
+  puts event, context
+  n = event[:body].chomp.to_i
+  if n.positive? && (n < 100)
+    if (n % 15).zero?
+      'fizzbuzz'
+    elsif (n % 3).zero?
+      'fizz'
+    elsif (n % 5).zero?
+      'buzz'
     else
       env
     end
   else
-    "Must be number between 1 and 99"
+    'Must be number between 1 and 99'
   end
 end

@@ -56,6 +56,30 @@ void on_write_complete(uv_write_t *req, int status)
 
 void on_read_chunk(uv_stream_t *client, ssize_t nread, const uv_buf_t *buf)
 {
+    struct sockaddr_storage name;
+    int name_length;
+
+    int r = uv_tcp_getsockname((uv_tcp_t *)client, (struct sockaddr *)&name, &name_length);
+
+    if (r != 0)
+    {
+        fprintf(stderr, "Read error %s\n", uv_err_name(nread));
+        uv_close((uv_handle_t *)client, NULL);
+        free(buf->base);
+        return;
+    }
+
+    if (name.ss_family != AF_INET)
+    {
+        fprintf(stderr, "Expected IPV4 socket");
+        uv_close((uv_handle_t *)client, NULL);
+    }
+
+    struct sockaddr_in *sin = (struct sockaddr_in *)&name;
+
+    struct in_addr ip_address;
+    const char *ip = inet_ntoa(sin->sin_addr);
+
     if (nread < 0)
     {
         if (nread != UV_EOF)
@@ -69,7 +93,14 @@ void on_read_chunk(uv_stream_t *client, ssize_t nread, const uv_buf_t *buf)
     {
         write_req_t *req = (write_req_t *)malloc(sizeof(write_req_t));
 
-        mrb_value ret = mrb_funcall(mrb, config_script, "handler", (mrb_int)1, mrb_str_new_cstr(mrb, buf->base));
+        mrb_value context = mrb_hash_new(mrb);
+        mrb_hash_set(mrb, context, mrb_symbol_value(mrb_intern_cstr(mrb, "ip_addresss")), mrb_str_new_cstr(mrb, ip));
+
+        mrb_value event = mrb_hash_new(mrb);
+        mrb_hash_set(mrb, event, mrb_symbol_value(mrb_intern_cstr(mrb, "body")), mrb_str_new_cstr(mrb, buf->base));
+
+        mrb_value ret = mrb_funcall(mrb, config_script, "handler", (mrb_int)2, event, context);
+
         mrb_value ret_as_str = mrb_obj_as_string(mrb, ret);
         const char *ret_as_cstr_tmp = mrb_string_value_cstr(mrb, &ret_as_str);
 
@@ -147,10 +178,6 @@ int main()
         error = 1;
         goto CLEANUP;
     }
-
-    // Call the handler
-    mrb_value ret = mrb_funcall(mrb, config_script, "handler", (mrb_int)1, mrb_str_new_cstr(mrb, "world!"));
-    mrb_value ret_as_string = mrb_obj_as_string(mrb, ret);
 
     // Run event loop
     loop = uv_default_loop();
