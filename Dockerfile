@@ -10,6 +10,7 @@ ARG RUBY_VERSION=3.2.3
 RUN apt update && apt install -y build-essential
 RUN apt update && apt install -y git
 RUN apt update && apt install -y cmake
+RUN apt update && apt install -y gdb 
 RUN apt update && apt install -y wget
 RUN apt update && apt install -y curl
 RUN apt update && apt install -y gnupg2
