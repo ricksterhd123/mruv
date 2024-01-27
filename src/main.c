@@ -7,6 +7,8 @@
 #include <mruby/proc.h>
 #include <mruby/variable.h>
 #include <mruby/hash.h>
+#include <mruby/class.h>
+#include <mruby/string.h>
 
 #define DEFAULT_PORT 7000
 #define DEFAULT_BACKLOG 128
@@ -118,6 +120,8 @@ void on_new_connection(uv_stream_t *server, int status)
 
 int main()
 {
+    int error = 0;
+    // Load config.rb file
     FILE *fp = fopen("config.rb", "r");
 
     if (!fp)
@@ -134,14 +138,35 @@ int main()
         return 1;
     }
 
+    // Create internal state
     mruv = mrb_hash_new(mrb);
-
-    mrb_hash_set(mrb, mruv, mrb_str_new_lit(mrb, "VERSION"), mrb_str_new_lit(mrb, "v1.0.0"));
+    mrb_hash_set(mrb, mruv, mrb_symbol_value(mrb_intern_cstr(mrb, "VERSION")), mrb_str_new_lit(mrb, "v1.0.0"));
     mrb_gv_set(mrb, mrb_intern_lit(mrb, "$mruv"), mruv);
 
-    // mrb_define_method(mrb, mrb->kernel_module, "add_event_handler", add_event_handler, MRB_ARGS_NONE() | MRB_ARGS_BLOCK());
-
+    // Load file
     config_script = mrb_load_file(mrb, fp);
+
+    if (mrb->exc) {
+        error = 1;
+        goto CLEANUP;
+    }
+
+    // Attempt to get handler
+    mrb_method_t handler = mrb_method_search_vm(mrb, &mrb->object_class, mrb_intern_lit(mrb, "handler"));
+
+    if (!handler) {
+        fprintf(stderr, "`handler` method does not exist\n");
+        error = 1;
+        goto CLEANUP;
+    }
+
+    struct RProc* handler_proc = MRB_METHOD_PROC(handler);
+
+    
+    mrb_value handler_result = mrb_vm_run(mrb, handler_proc, );
+    mrb_value handler_result_string = mrb_obj_as_string(mrb, handler_result);
+
+    printf("result: %s\n", mrb_string_value_cstr (mrb, &handler_result_string));
 
     // loop = uv_default_loop();
     // uv_tcp_t server;
@@ -159,8 +184,9 @@ int main()
 
     // int result = uv_run(loop, UV_RUN_DEFAULT);
 
+CLEANUP:
     mrb_close(mrb);
     fclose(fp);
 
-    return 0;
+    return error;
 }
