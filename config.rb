@@ -1,5 +1,5 @@
 puts $mruv
 
-def handler(x)
-  x + 1
+def handler(env)
+  "Hello " + env
 end

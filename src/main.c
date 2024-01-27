@@ -151,40 +151,35 @@ int main()
         goto CLEANUP;
     }
 
-    // Attempt to get handler
+    // Check handler exists
     mrb_method_t handler = mrb_method_search_vm(mrb, &mrb->object_class, mrb_intern_lit(mrb, "handler"));
-
     if (!handler) {
         fprintf(stderr, "`handler` method does not exist\n");
         error = 1;
         goto CLEANUP;
-    } else {
-        printf("Found method `handler`\n");
     }
 
-    // struct RProc* handler_proc = MRB_METHOD_PROC(handler);
+    // Call the handler
+    mrb_value ret = mrb_funcall(mrb, config_script, "handler", (mrb_int) 1, mrb_str_new_cstr(mrb, "world!"));
+    mrb_value ret_as_string = mrb_obj_as_string(mrb, ret);
+    printf("%s\n", mrb_string_value_cstr(mrb, &ret_as_string));
 
+    // Run event loop
+    loop = uv_default_loop();
+    uv_tcp_t server;
 
-    // mrb_value handler_result = mrb_vm_run(mrb, handler_proc, );
-    // mrb_value handler_result_string = mrb_obj_as_string(mrb, handler_result);
+    uv_tcp_init(loop, &server);
+    uv_ip4_addr("0.0.0.0", DEFAULT_PORT, &addr);
+    uv_tcp_bind(&server, (const struct sockaddr *)&addr, 0);
 
-    // printf("result: %s\n", mrb_string_value_cstr (mrb, &handler_result_string));
+    int r = uv_listen((uv_stream_t *)&server, DEFAULT_BACKLOG, on_new_connection);
+    if (r)
+    {
+        fprintf(stderr, "Listen error %s\n", uv_strerror(r));
+        return 1;
+    }
 
-    // loop = uv_default_loop();
-    // uv_tcp_t server;
-
-    // uv_tcp_init(loop, &server);
-    // uv_ip4_addr("0.0.0.0", DEFAULT_PORT, &addr);
-    // uv_tcp_bind(&server, (const struct sockaddr *)&addr, 0);
-
-    // int r = uv_listen((uv_stream_t *)&server, DEFAULT_BACKLOG, on_new_connection);
-    // if (r)
-    // {
-    //     fprintf(stderr, "Listen error %s\n", uv_strerror(r));
-    //     return 1;
-    // }
-
-    // int result = uv_run(loop, UV_RUN_DEFAULT);
+    error = uv_run(loop, UV_RUN_DEFAULT);
 
 CLEANUP:
     mrb_close(mrb);
