@@ -26,6 +26,7 @@ RUN rvm --default use ${RUBY_VERSION}
 # install ruby gems for development environment
 RUN gem install ruby-lsp
 RUN gem install solargraph
+RUN gem install rubocop
 
 # grab mruby
 RUN wget https://github.com/mruby/mruby/archive/refs/tags/${MRUBY_VERSION}.tar.gz -P /tmp/mruby

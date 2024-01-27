@@ -17,7 +17,8 @@
 				"EditorConfig.EditorConfig",
 				"twxs.cmake",
 				"Shopify.ruby-extensions-pack",
-				"castwide.solargraph"
+				"castwide.solargraph",
+				"rubocop.vscode-rubocop"
 			]
 		}
 	}
