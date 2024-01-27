@@ -21,5 +21,3 @@ jobs:
         load: true
     - name: Build mruv
       run: docker container run -v ".:/mruv" mruv:latest 'cd mruv && mkdir -p build && cd build && cmake .. && cmake --build .'
-    - name: Run mruv
-      run: cd build && ./mruv
