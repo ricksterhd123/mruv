@@ -12,6 +12,8 @@
 #include <mruby/class.h>
 #include <mruby/string.h>
 
+#include <picohttpparser.h>
+
 #define DEFAULT_PORT 7000
 #define DEFAULT_BACKLOG 128
 

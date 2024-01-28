@@ -1,3 +1,6 @@
 {
-  "rubocop.mode": "onlyRunGlobally"
+  "rubocop.mode": "onlyRunGlobally",
+  "files.associations": {
+    "picohttpparser.h": "c"
+  }
 }
