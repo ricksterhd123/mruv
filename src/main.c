@@ -58,10 +58,10 @@ void on_write_complete(uv_write_t *req, int status)
 
 void on_read_chunk(uv_stream_t *client, ssize_t nread, const uv_buf_t *buf)
 {
+    printf("%ld\n", nread);
     struct sockaddr_storage name;
     int name_length;
-
-    int r = uv_tcp_getsockname((uv_tcp_t *)client, (struct sockaddr *)&name, &name_length);
+    int r = uv_tcp_getpeername((uv_tcp_t *)client, (struct sockaddr *)&name, &name_length);
 
     if (r != 0)
     {
@@ -71,14 +71,7 @@ void on_read_chunk(uv_stream_t *client, ssize_t nread, const uv_buf_t *buf)
         return;
     }
 
-    if (name.ss_family != AF_INET)
-    {
-        fprintf(stderr, "Expected IPV4 socket");
-        uv_close((uv_handle_t *)client, NULL);
-    }
-
     struct sockaddr_in *sin = (struct sockaddr_in *)&name;
-
     struct in_addr ip_address;
     const char *ip = inet_ntoa(sin->sin_addr);
 
@@ -93,26 +86,52 @@ void on_read_chunk(uv_stream_t *client, ssize_t nread, const uv_buf_t *buf)
     }
     else if (nread > 0)
     {
+
         write_req_t *req = (write_req_t *)malloc(sizeof(write_req_t));
 
-        mrb_value context = mrb_hash_new(mrb);
-        mrb_hash_set(mrb, context, mrb_symbol_value(mrb_intern_cstr(mrb, "ip_addresss")), mrb_str_new_cstr(mrb, ip));
+        size_t num_headers = 100;
+        struct phr_header headers[num_headers];
+        const char *method;
+        int minor_version;
+        size_t method_len;
+        const char *path;
+        size_t path_len;
+        size_t last_len;
 
-        mrb_value event = mrb_hash_new(mrb);
-        mrb_hash_set(mrb, event, mrb_symbol_value(mrb_intern_cstr(mrb, "body")), mrb_str_new_cstr(mrb, buf->base));
+        // if (client->data == NULL)
+        // {
+        //     last_len = 0;
+        //     client->data = (size_t *)malloc(sizeof(size_t));
+        //     *((size_t*)client->data) = last_len;
 
-        mrb_value ret = mrb_funcall(mrb, config_script, "handler", (mrb_int)2, event, context);
+        // printf("%ld", (size_t) *((size_t*)client->data));
+        // }
+        // else
+        // {
+        //     size_t* last_len_t = (size_t*) client->data;
+        //     last_len = (*last_len_t);
+        // }
 
-        mrb_value ret_as_str = mrb_obj_as_string(mrb, ret);
-        const char *ret_as_cstr_tmp = mrb_string_value_cstr(mrb, &ret_as_str);
+        // int pret = phr_parse_request(buf->base, nread, &method, &method_len, &path, &path_len, &minor_version, headers, &num_headers, last_len);
 
-        // NOTE: ret_as_cstr is passed into uv_buf_init freed by libuv on complete
-        ssize_t ret_as_cstr_sz = sizeof(char) * (strlen(ret_as_cstr_tmp) + 2);
-        char *ret_as_cstr = (char *)malloc(ret_as_cstr_sz);
-        snprintf(ret_as_cstr, ret_as_cstr_sz, "%s\n", ret_as_cstr_tmp);
+        // *(size_t *)(client->data) += pret;
 
-        req->buf = uv_buf_init(ret_as_cstr, ret_as_cstr_sz);
+        // if (pret > 0)
+        // {
+        //     printf("%d, %s, %s", minor_version, path, method);
+        // }
+        // else if (pret == -1)
+        // {
+        //     fprintf(stderr, "HTTP/1.1 parse error\n");
+        //     uv_close((uv_handle_t *)client, NULL);
+        // }
+
+        char* ret = malloc(sizeof(char) * 6);
+        sprintf(ret, "Hello");
+
+        req->buf = uv_buf_init(ret, strlen(ret) + 1);
         uv_write((uv_write_t *)req, client, &req->buf, 1, on_write_complete);
+
         return;
     }
 }
@@ -130,6 +149,7 @@ void on_new_connection(uv_stream_t *server, int status)
 
     if (uv_accept(server, (uv_stream_t *)client) == 0)
     {
+        // uv_handle_set_data((uv_handle_t*) client, (size_t) 5);
         uv_read_start((uv_stream_t *)client, alloc_buffer, on_read_chunk);
     }
     else
@@ -141,6 +161,12 @@ void on_new_connection(uv_stream_t *server, int status)
 int main()
 {
     int error = 0;
+
+    int *a = (int *)malloc(sizeof(int));
+
+    *a = 5;
+
+    printf("%d\n", *a);
 
     // Load config.rb file
     FILE *fp = fopen("config.rb", "r");
