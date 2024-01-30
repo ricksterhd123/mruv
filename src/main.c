@@ -1,4 +1,4 @@
-#include <stdlib.h>
+#include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -12,7 +12,7 @@
 #include <mruby/class.h>
 #include <mruby/string.h>
 
-#include <picohttpparser.h>
+#include "http1.h"
 
 #define DEFAULT_PORT 7000
 #define DEFAULT_BACKLOG 128
@@ -58,14 +58,13 @@ void on_write_complete(uv_write_t *req, int status)
 
 void on_read_chunk(uv_stream_t *client, ssize_t nread, const uv_buf_t *buf)
 {
-    printf("%ld\n", nread);
     struct sockaddr_storage name;
     int name_length;
-    int r = uv_tcp_getpeername((uv_tcp_t *)client, (struct sockaddr *)&name, &name_length);
+    int r = uv_tcp_getpeername((const uv_tcp_t *)client, (struct sockaddr *)&name, &name_length);
 
     if (r != 0)
     {
-        fprintf(stderr, "Read error %s\n", uv_err_name(nread));
+        fprintf(stderr, "Read error %s\n", uv_err_name(r));
         uv_close((uv_handle_t *)client, NULL);
         free(buf->base);
         return;
@@ -87,52 +86,34 @@ void on_read_chunk(uv_stream_t *client, ssize_t nread, const uv_buf_t *buf)
     else if (nread > 0)
     {
 
+        printf("%jd INFO: IP Address %s, nread %ld\n", (intmax_t)time(NULL), ip, nread);
         write_req_t *req = (write_req_t *)malloc(sizeof(write_req_t));
 
         size_t num_headers = 100;
-        struct phr_header headers[num_headers];
+        struct phr_header headers[100];
         const char *method;
         int minor_version;
         size_t method_len;
         const char *path;
         size_t path_len;
-        size_t last_len;
 
-        // if (client->data == NULL)
-        // {
-        //     last_len = 0;
-        //     client->data = (size_t *)malloc(sizeof(size_t));
-        //     *((size_t*)client->data) = last_len;
+        int pret = phr_parse_request(buf->base, nread, &method, &method_len, &path, &path_len, &minor_version, headers, &num_headers, 0);
 
-        // printf("%ld", (size_t) *((size_t*)client->data));
-        // }
-        // else
-        // {
-        //     size_t* last_len_t = (size_t*) client->data;
-        //     last_len = (*last_len_t);
-        // }
+        if (pret > 0)
+        {
+            printf("%d, %s, %s", minor_version, path, method);
+        }
+        else if (pret == -1)
+        {
+            fprintf(stderr, "HTTP/1.1 parse error\n");
+            uv_close((uv_handle_t *)client, NULL);
+        }
 
-        // int pret = phr_parse_request(buf->base, nread, &method, &method_len, &path, &path_len, &minor_version, headers, &num_headers, last_len);
-
-        // *(size_t *)(client->data) += pret;
-
-        // if (pret > 0)
-        // {
-        //     printf("%d, %s, %s", minor_version, path, method);
-        // }
-        // else if (pret == -1)
-        // {
-        //     fprintf(stderr, "HTTP/1.1 parse error\n");
-        //     uv_close((uv_handle_t *)client, NULL);
-        // }
-
-        char* ret = malloc(sizeof(char) * 6);
+        char *ret = malloc(sizeof(char) * 6);
         sprintf(ret, "Hello");
 
         req->buf = uv_buf_init(ret, strlen(ret) + 1);
         uv_write((uv_write_t *)req, client, &req->buf, 1, on_write_complete);
-
-        return;
     }
 }
 
@@ -161,12 +142,13 @@ void on_new_connection(uv_stream_t *server, int status)
 int main()
 {
     int error = 0;
+    
+    const char body[] = "Hello";
+    http_response_t* http_response = generate_http_response(200, body, strlen(body) + 1);
+    char* response_str = http_response_to_str(http_response);
 
-    int *a = (int *)malloc(sizeof(int));
-
-    *a = 5;
-
-    printf("%d\n", *a);
+    printf("%s\n", response_str);
+    
 
     // Load config.rb file
     FILE *fp = fopen("config.rb", "r");

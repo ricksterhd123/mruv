@@ -1,6 +1,10 @@
 {
   "rubocop.mode": "onlyRunGlobally",
   "files.associations": {
-    "picohttpparser.h": "c"
+    "picohttpparser.h": "c",
+    "type_traits": "c",
+    "cmath": "c",
+    "limits": "c",
+    "cstdlib": "cpp"
   }
 }
