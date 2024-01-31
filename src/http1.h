@@ -151,6 +151,10 @@ http_response_t *generate_http_response(unsigned int status_code, const char *bo
     response->http_date = new_str(asctime(gmtime(&result)));
     response->http_date_len = strlen(response->http_date) + 1;
 
+    // Remove the \n from the end of the string
+    // \n\0
+    response->http_date[response->http_date_len - 2] = '\0';
+
     response->status_code = status_code;
     response->status_reason = get_status_reason_code(status_code);
     response->status_reason_len = strlen(response->status_reason) + 1;
@@ -170,7 +174,8 @@ http_response_t *generate_http_response(unsigned int status_code, const char *bo
     http_header_t *last_modified = get_http_header("Last-Modified", response->http_date);
     http_header_t *accept_ranges = get_http_header("Accept-Ranges", "none");
     http_header_t *vary = get_http_header("Vary", "Accept-Encoding");
-    http_header_t *content_type = get_http_header("Content-Type", "text/plain");
+    http_header_t *connection = get_http_header("Connection", "Closed");
+    http_header_t *content_type = get_http_header("Content-Type", "text/html");
 
     response->headers = (http_header_t **)malloc(sizeof(http_header_t *) * 100);
     response->headers[0] = date;
@@ -179,8 +184,9 @@ http_response_t *generate_http_response(unsigned int status_code, const char *bo
     response->headers[3] = accept_ranges;
     response->headers[4] = content_length;
     response->headers[5] = vary;
-    response->headers[6] = content_type;
-    response->num_headers = 7;
+    response->headers[6] = connection;
+    response->headers[7] = content_type;
+    response->num_headers = 8;
 
     free(content_length_str);
 
@@ -239,7 +245,7 @@ char *http_response_to_str(http_response_t *response)
     size_t total_response_len = status_line_len + 2 + headers_str_len + 2 + response->body_len;
 
     char* response_str = (char*) calloc(total_response_len, sizeof(char));
-    snprintf(response_str, total_response_len, "%s\r\n%s", headers_str, response->body);
+    snprintf(response_str, total_response_len, "%s\r\n%s\r\n%s", status_line, headers_str, response->body);
 
     free(headers_str);
     free(status_line);

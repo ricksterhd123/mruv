@@ -89,31 +89,34 @@ void on_read_chunk(uv_stream_t *client, ssize_t nread, const uv_buf_t *buf)
         printf("%jd INFO: IP Address %s, nread %ld\n", (intmax_t)time(NULL), ip, nread);
         write_req_t *req = (write_req_t *)malloc(sizeof(write_req_t));
 
-        size_t num_headers = 100;
-        struct phr_header headers[100];
-        const char *method;
-        int minor_version;
-        size_t method_len;
-        const char *path;
-        size_t path_len;
-
-        int pret = phr_parse_request(buf->base, nread, &method, &method_len, &path, &path_len, &minor_version, headers, &num_headers, 0);
-
-        if (pret > 0)
+        http_request_t *http_request = parse_http_request(buf->base, nread);
+        if (http_request == NULL)
         {
-            printf("%d, %s, %s", minor_version, path, method);
-        }
-        else if (pret == -1)
-        {
-            fprintf(stderr, "HTTP/1.1 parse error\n");
-            uv_close((uv_handle_t *)client, NULL);
+            fprintf(stderr, "Failed to parse http message\n");
+            return;
         }
 
-        char *ret = malloc(sizeof(char) * 6);
-        sprintf(ret, "Hello");
+        mrb_value ret = mrb_funcall(mrb, config_script, "handler", 0);
 
-        req->buf = uv_buf_init(ret, strlen(ret) + 1);
+        mrb_value ret_as_str = mrb_obj_as_string(mrb, ret);
+        const char *ret_as_cstr_tmp = mrb_string_value_cstr(mrb, &ret_as_str);
+
+        http_response_t *http_response = generate_http_response(200, ret_as_cstr_tmp, strlen(ret_as_cstr_tmp) + 1);
+
+        if (http_response == NULL)
+        {
+            fprintf(stderr, "Failed to generate http response\n");
+            return;
+        }
+
+        char *http_response_str = http_response_to_str(http_response);
+        printf("%s\n", http_response_str);
+
+        req->buf = uv_buf_init(http_response_str, strlen(http_response_str) + 1);
         uv_write((uv_write_t *)req, client, &req->buf, 1, on_write_complete);
+        free_http_response(http_response);
+        uv_close((uv_handle_t *)client, NULL);
+        free(buf->base);
     }
 }
 
@@ -142,13 +145,6 @@ void on_new_connection(uv_stream_t *server, int status)
 int main()
 {
     int error = 0;
-    
-    const char body[] = "Hello";
-    http_response_t* http_response = generate_http_response(200, body, strlen(body) + 1);
-    char* response_str = http_response_to_str(http_response);
-
-    printf("%s\n", response_str);
-    
 
     // Load config.rb file
     FILE *fp = fopen("config.rb", "r");
