@@ -36,7 +36,7 @@ void itoa(int n, char s[])
 }
 
 char* new_n_str(const char* src, size_t src_len) {
-    char* dest = (char*) malloc(sizeof(char) * src_len);
+    char* dest = (char*) calloc(src_len, sizeof(char));
     memcpy(dest, src, src_len);
 
     if (dest[src_len] != '\0') {

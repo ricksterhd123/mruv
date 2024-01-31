@@ -43,7 +43,7 @@ void free_write_req(uv_write_t *req)
 
 void alloc_buffer(uv_handle_t *handle, size_t suggested_size, uv_buf_t *buf)
 {
-    buf->base = (char *)malloc(suggested_size);
+    buf->base = (char *)calloc(1, suggested_size);
     buf->len = suggested_size;
 }
 
@@ -58,22 +58,6 @@ void on_write_complete(uv_write_t *req, int status)
 
 void on_read_chunk(uv_stream_t *client, ssize_t nread, const uv_buf_t *buf)
 {
-    struct sockaddr_storage name;
-    int name_length;
-    int r = uv_tcp_getpeername((const uv_tcp_t *)client, (struct sockaddr *)&name, &name_length);
-
-    if (r != 0)
-    {
-        fprintf(stderr, "Read error %s\n", uv_err_name(r));
-        uv_close((uv_handle_t *)client, NULL);
-        free(buf->base);
-        return;
-    }
-
-    struct sockaddr_in *sin = (struct sockaddr_in *)&name;
-    struct in_addr ip_address;
-    const char *ip = inet_ntoa(sin->sin_addr);
-
     if (nread < 0)
     {
         if (nread != UV_EOF)
@@ -81,22 +65,42 @@ void on_read_chunk(uv_stream_t *client, ssize_t nread, const uv_buf_t *buf)
             fprintf(stderr, "Read error %s\n", uv_err_name(nread));
             uv_close((uv_handle_t *)client, NULL);
         }
+
         free(buf->base);
     }
     else if (nread > 0)
     {
+        struct sockaddr_storage name;
+        int name_length;
+        int r = uv_tcp_getpeername((const uv_tcp_t *)client, (struct sockaddr *)&name, &name_length);
 
-        printf("%jd INFO: IP Address %s, nread %ld\n", (intmax_t)time(NULL), ip, nread);
+        if (r != 0)
+        {
+            fprintf(stderr, "uv_tcp_getpeername error %s\n", uv_err_name(r));
+            uv_close((uv_handle_t *)client, NULL);
+            free(buf->base);
+            return;
+        }
+
+        struct sockaddr_in *sin = (struct sockaddr_in *)&name;
+        struct in_addr ip_address;
+        const char *ip = inet_ntoa(sin->sin_addr);
+
+        // printf("%jd INFO: IP Address %s, nread %ld\n", (intmax_t)time(NULL), ip, nread);
         write_req_t *req = (write_req_t *)malloc(sizeof(write_req_t));
+
+        printf("==%s==\n", buf->base);
 
         http_request_t *http_request = parse_http_request(buf->base, nread);
         if (http_request == NULL)
         {
             fprintf(stderr, "Failed to parse http message\n");
+            uv_close((uv_handle_t *)client, NULL);
+            free(buf->base);
             return;
         }
 
-        mrb_value ret = mrb_funcall(mrb, config_script, "handler", 0);
+        mrb_value ret = mrb_funcall(mrb, config_script, "handler", 1, mrb_str_new_cstr(mrb, http_request->body));
 
         mrb_value ret_as_str = mrb_obj_as_string(mrb, ret);
         const char *ret_as_cstr_tmp = mrb_string_value_cstr(mrb, &ret_as_str);
@@ -106,17 +110,21 @@ void on_read_chunk(uv_stream_t *client, ssize_t nread, const uv_buf_t *buf)
         if (http_response == NULL)
         {
             fprintf(stderr, "Failed to generate http response\n");
+            uv_close((uv_handle_t *)client, NULL);
+            free(buf->base);
             return;
         }
 
         char *http_response_str = http_response_to_str(http_response);
-        printf("%s\n", http_response_str);
+        // printf("%s\n", http_response_str);
 
-        req->buf = uv_buf_init(http_response_str, strlen(http_response_str) + 1);
+        // Don't append \0 null byte on the end!!
+        req->buf = uv_buf_init(http_response_str, strlen(http_response_str));
         uv_write((uv_write_t *)req, client, &req->buf, 1, on_write_complete);
         free_http_response(http_response);
         uv_close((uv_handle_t *)client, NULL);
         free(buf->base);
+        return;
     }
 }
 

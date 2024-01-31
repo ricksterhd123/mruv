@@ -40,9 +40,9 @@ http_header_t *get_n_http_header(const char *name, size_t name_len, const char *
         return NULL;
     }
 
-    header->name = (char *)malloc(sizeof(char) * name_len);
+    header->name = (char *)calloc(name_len, sizeof(char));
     header->name_len = name_len;
-    header->value = (char *)malloc(sizeof(char) * value_len);
+    header->value = (char *)calloc(value_len, sizeof(char));
     header->value_len = value_len;
 
     memcpy(header->name, name, name_len);
@@ -83,7 +83,7 @@ char *get_status_reason_code(unsigned short status_code)
     }
 
     size_t status_reason_code_len = strlen(status_code_str) + strlen(reason) + 2;
-    char *status_reason_code = (char *)malloc(sizeof(char) * status_reason_code_len);
+    char *status_reason_code = (char *)calloc(status_reason_code_len, sizeof(char));
     snprintf(status_reason_code, status_reason_code_len, "%s %s", status_code_str, reason);
 
     return status_reason_code;
@@ -97,6 +97,8 @@ typedef struct
     size_t method_len;
     const char *path;
     size_t path_len;
+    const char *body;
+    size_t body_len;
 } http_request_t;
 
 typedef struct
@@ -132,6 +134,9 @@ http_request_t *parse_http_request(const char *buf, size_t len)
         return NULL;
     }
 
+    req->body_len = len - pret;
+    req->body = buf + pret;
+
     return req;
 }
 
@@ -160,12 +165,12 @@ http_response_t *generate_http_response(unsigned int status_code, const char *bo
     response->status_reason_len = strlen(response->status_reason) + 1;
 
     response->body_len = body_len;
-    response->body = (char *)malloc(sizeof(char) * body_len);
+    response->body = (char *)calloc(body_len, sizeof(char));
     memcpy(response->body, body, body_len);
 
     // Calculate Content-Length header
     size_t content_length_str_len = ceil(log10(body_len)) + 1;
-    char *content_length_str = (char *)malloc(sizeof(char) * content_length_str_len);
+    char *content_length_str = (char *)calloc(content_length_str_len, sizeof(char));
     itoa(strlen(body), content_length_str);
 
     http_header_t *content_length = get_http_header("Content-Length", content_length_str);
@@ -180,13 +185,12 @@ http_response_t *generate_http_response(unsigned int status_code, const char *bo
     response->headers = (http_header_t **)malloc(sizeof(http_header_t *) * 100);
     response->headers[0] = date;
     response->headers[1] = server;
-    response->headers[2] = last_modified;
-    response->headers[3] = accept_ranges;
-    response->headers[4] = content_length;
-    response->headers[5] = vary;
-    response->headers[6] = connection;
-    response->headers[7] = content_type;
-    response->num_headers = 8;
+    // response->headers[3] = accept_ranges;
+    response->headers[2] = content_length;
+    response->headers[3] = vary;
+    response->headers[4] = connection;
+    response->headers[5] = content_type;
+    response->num_headers = 6;
 
     free(content_length_str);
 
