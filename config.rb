@@ -3,6 +3,6 @@
 ##
 # mruv socket handler function fizzbuzz example
 #
-def handler
-  '<h1>Hello world!</h1>'
+def handler(body)
+  body.reverse
 end
