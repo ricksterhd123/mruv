@@ -1,5 +1,7 @@
 # mruv
-mruv = mruby + libuv
+**mruv = mruby + libuv**
+
+> mruv is a proof-of-concept for a scriptable web server using mruby. It's designed as single binary toolkit for creating (hopefully fast and secure) dynamic web applications.
 
 ## System Requirements
 - git
@@ -16,26 +18,21 @@ TBC...
 ## TODO
 - [x] statically linked mruby + libuv (single binary)
 - [x] proof of concept ruby dsl scripting for callbacks to events, similar to ruby rack config.ru
-```rb
-##
-# mruv socket handler function fizzbuzz example
-#
-def handler(env)
-  n = env.chomp.to_i
-  if n > 0 and n < 100 then
-    if n % 15 == 0 then
-      "fizzbuzz"
-    elsif n % 3 == 0 then
-      "fizz"
-    elsif n % 5 == 0 then
-      "buzz"
-    else
-      env
-    end
-  else
-    "Must be number between 1 and 99"
-  end
-end
+- [x] libuv TCP socket handling
+- [x] http request parsing & response generation
+- [x] proof of concept testing in postman
+- [] improve c handling + research valgrind / ASAT and other dynamic memory testing tools
+- [] unit testing
+- [] JSON handling library
+- [] MIME handling
+- [] chunked content + streaming
 
+## Examples
+![Return the request body reversed](image.png)
+
+`config.rb`
+```rb
+def handler(body)
+  body.reverse
+end
 ```
-- [ ] support libuv TCP/IP and maybe some file stuff
