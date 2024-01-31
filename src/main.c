@@ -1,4 +1,4 @@
-#include <stdlib.h>
+#include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -12,7 +12,7 @@
 #include <mruby/class.h>
 #include <mruby/string.h>
 
-#include <picohttpparser.h>
+#include "http1.h"
 
 #define DEFAULT_PORT 7000
 #define DEFAULT_BACKLOG 128
@@ -60,25 +60,17 @@ void on_read_chunk(uv_stream_t *client, ssize_t nread, const uv_buf_t *buf)
 {
     struct sockaddr_storage name;
     int name_length;
-
-    int r = uv_tcp_getsockname((uv_tcp_t *)client, (struct sockaddr *)&name, &name_length);
+    int r = uv_tcp_getpeername((const uv_tcp_t *)client, (struct sockaddr *)&name, &name_length);
 
     if (r != 0)
     {
-        fprintf(stderr, "Read error %s\n", uv_err_name(nread));
+        fprintf(stderr, "Read error %s\n", uv_err_name(r));
         uv_close((uv_handle_t *)client, NULL);
         free(buf->base);
         return;
     }
 
-    if (name.ss_family != AF_INET)
-    {
-        fprintf(stderr, "Expected IPV4 socket");
-        uv_close((uv_handle_t *)client, NULL);
-    }
-
     struct sockaddr_in *sin = (struct sockaddr_in *)&name;
-
     struct in_addr ip_address;
     const char *ip = inet_ntoa(sin->sin_addr);
 
@@ -93,27 +85,38 @@ void on_read_chunk(uv_stream_t *client, ssize_t nread, const uv_buf_t *buf)
     }
     else if (nread > 0)
     {
+
+        printf("%jd INFO: IP Address %s, nread %ld\n", (intmax_t)time(NULL), ip, nread);
         write_req_t *req = (write_req_t *)malloc(sizeof(write_req_t));
 
-        mrb_value context = mrb_hash_new(mrb);
-        mrb_hash_set(mrb, context, mrb_symbol_value(mrb_intern_cstr(mrb, "ip_addresss")), mrb_str_new_cstr(mrb, ip));
+        http_request_t *http_request = parse_http_request(buf->base, nread);
+        if (http_request == NULL)
+        {
+            fprintf(stderr, "Failed to parse http message\n");
+            return;
+        }
 
-        mrb_value event = mrb_hash_new(mrb);
-        mrb_hash_set(mrb, event, mrb_symbol_value(mrb_intern_cstr(mrb, "body")), mrb_str_new_cstr(mrb, buf->base));
-
-        mrb_value ret = mrb_funcall(mrb, config_script, "handler", (mrb_int)2, event, context);
+        mrb_value ret = mrb_funcall(mrb, config_script, "handler", 0);
 
         mrb_value ret_as_str = mrb_obj_as_string(mrb, ret);
         const char *ret_as_cstr_tmp = mrb_string_value_cstr(mrb, &ret_as_str);
 
-        // NOTE: ret_as_cstr is passed into uv_buf_init freed by libuv on complete
-        ssize_t ret_as_cstr_sz = sizeof(char) * (strlen(ret_as_cstr_tmp) + 2);
-        char *ret_as_cstr = (char *)malloc(ret_as_cstr_sz);
-        snprintf(ret_as_cstr, ret_as_cstr_sz, "%s\n", ret_as_cstr_tmp);
+        http_response_t *http_response = generate_http_response(200, ret_as_cstr_tmp, strlen(ret_as_cstr_tmp) + 1);
 
-        req->buf = uv_buf_init(ret_as_cstr, ret_as_cstr_sz);
+        if (http_response == NULL)
+        {
+            fprintf(stderr, "Failed to generate http response\n");
+            return;
+        }
+
+        char *http_response_str = http_response_to_str(http_response);
+        printf("%s\n", http_response_str);
+
+        req->buf = uv_buf_init(http_response_str, strlen(http_response_str) + 1);
         uv_write((uv_write_t *)req, client, &req->buf, 1, on_write_complete);
-        return;
+        free_http_response(http_response);
+        uv_close((uv_handle_t *)client, NULL);
+        free(buf->base);
     }
 }
 
@@ -130,6 +133,7 @@ void on_new_connection(uv_stream_t *server, int status)
 
     if (uv_accept(server, (uv_stream_t *)client) == 0)
     {
+        // uv_handle_set_data((uv_handle_t*) client, (size_t) 5);
         uv_read_start((uv_stream_t *)client, alloc_buffer, on_read_chunk);
     }
     else

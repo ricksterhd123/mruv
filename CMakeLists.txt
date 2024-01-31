@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.10)
 
 project(mruv VERSION 1.0)
 
-add_executable(mruv src/main.c)
+add_executable(mruv src/main.c src/http1.h)
 configure_file(config.rb config.rb COPYONLY)
 
 add_library(picohttpparser STATIC "${PROJECT_SOURCE_DIR}/lib/picohttpparser/picohttpparser.c")
@@ -18,4 +18,4 @@ set_target_properties(libuv PROPERTIES INTERFACE_INCLUDE_DIRECTORIES /usr/local/
 
 target_compile_options(mruv PUBLIC "-pthread")
 target_link_libraries(mruv PRIVATE libuv mruby m dl pthread picohttpparser)
-target_include_directories(mruv PRIVATE "${PROJECT_BINARY_DIR}")
+target_include_directories(mruv PRIVATE "${PROJECT_SOURCE_DIR}")

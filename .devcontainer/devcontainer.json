@@ -18,7 +18,8 @@
 				"twxs.cmake",
 				"Shopify.ruby-extensions-pack",
 				"castwide.solargraph",
-				"rubocop.vscode-rubocop"
+				"rubocop.vscode-rubocop",
+				"github.vscode-github-actions"
 			]
 		}
 	}
