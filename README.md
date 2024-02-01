@@ -8,26 +8,30 @@
 - Docker
 - GNU/Linux x86
 
-## Setup Development
+## Getting Started
+### Development
+#### Local machine docker
 - Clone repository
-- Load the dev container in vscode
+- Load the dev container in vscode or docker
 
-## Installation
-TBC...
+#### Github codespaces
+- Simply open up in github codespace, the full development environment runs nicely in the browser
 
-## TODO
+## Development Notes
+### TODO
 - [x] statically linked mruby + libuv (single binary)
 - [x] proof of concept ruby dsl scripting for callbacks to events, similar to ruby rack config.ru
 - [x] libuv TCP socket handling
 - [x] http request parsing & response generation
 - [x] proof of concept testing in postman
-- [] improve c handling + research valgrind / ASAT and other dynamic memory testing tools
-- [] unit testing
-- [] JSON handling library
-- [] MIME handling
-- [] chunked content + streaming
+- [ ] mruv context handling
+- [ ] JSON handling library
+- [ ] MIME handling
+- [ ] unit testing
+- [ ] improve c handling + research valgrind / ASAN and other dynamic memory testing tools
+- [ ] chunked content + streaming (generally, handle as much of http/1.1 spec as possible)
 
-## Examples
+### Examples
 ![Return the request body reversed](image.png)
 
 `config.rb`
